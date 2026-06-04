@@ -38,6 +38,14 @@ else
                         <p class="card-text text-muted small">
                             @(ev.Description?.Length > 100 ? ev.Description[..100] + "..." : ev.Description)
                         </p>
+                        <p class="card-text small">
+                            <i class="bi bi-calendar-event text-success me-1"></i>
+                            @ev.StartDate.ToString("dd MMM yyyy")
+                            @if (ev.EndDate != ev.StartDate)
+                            {
+                                <span> – @ev.EndDate.ToString("dd MMM yyyy")</span>
+                            }
+                        </p>
                     </div>
                     <div class="card-footer bg-transparent">
                         <div class="d-flex gap-1">

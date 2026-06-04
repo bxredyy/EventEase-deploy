@@ -48,27 +48,20 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 
 var app = builder.Build();
 
-// Make sure the named LocalDB instance "EventEaseApp" exists and is started
-// BEFORE EF tries to connect. Visual Studio's hosted process sometimes
-// can't start the shared MSSQLLocalDB instance, so we use a named one.
-// "create" is a no-op if it already exists; same for "start".
-foreach (var localDbArgs in new[] { "create EventEaseApp", "start EventEaseApp" })
+// Ensure the shared LocalDB instance MSSQLLocalDB is started before EF tries to connect.
+try
 {
-    try
+    using var proc = Process.Start(new ProcessStartInfo
     {
-        using var proc = Process.Start(new ProcessStartInfo
-        {
-            FileName = "sqllocaldb",
-            Arguments = localDbArgs,
-            CreateNoWindow = true,
-            UseShellExecute = true,
-            WindowStyle = ProcessWindowStyle.Hidden
-        });
-        proc?.WaitForExit(8000);
-    }
-    catch { /* sqllocaldb missing from PATH — instance may already be running */ }
+        FileName = "sqllocaldb",
+        Arguments = "start MSSQLLocalDB",
+        CreateNoWindow = true,
+        UseShellExecute = true,
+        WindowStyle = ProcessWindowStyle.Hidden
+    });
+    proc?.WaitForExit(8000);
 }
-Thread.Sleep(2000); // small delay so the SQL process is fully ready
+catch { /* sqllocaldb missing from PATH — instance may already be running */ }
 
 // POE Part 1C: Auto-apply any pending EF migrations on startup so the
 //              marker doesn't have to run "dotnet ef database update"
@@ -113,7 +106,10 @@ app.Use(async (context, next) =>
     }
 });
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseStaticFiles();   // serves wwwroot files (CSS, JS, images)
 app.UseRouting();
 app.UseAuthorization();

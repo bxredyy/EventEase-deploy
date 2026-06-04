@@ -29,7 +29,7 @@ else
                 <thead class="table-dark">
                     <tr>
                         <th>Reference</th>
-                        <th>Venue</th>
+                        <th colspan="2">Venue</th>
                         <th>Event</th>
                         <th>Start Date</th>
                         <th>End Date</th>
@@ -41,7 +41,20 @@ else
                     {
                         <tr>
                             <td class="align-middle"><span class="badge bg-primary">@booking.BookingReference</span></td>
-                            <td class="align-middle fw-semibold">@booking.Venue?.Name</td>
+                            <td class="align-middle" style="width:80px;">
+                                @if (!string.IsNullOrEmpty(booking.Venue?.ImageUrl))
+                                {
+                                    <img src="@booking.Venue.ImageUrl" class="img-thumbnail-venue" alt="@booking.Venue.Name" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted"><i class="bi bi-building fs-4"></i></span>
+                                }
+                            </td>
+                            <td class="align-middle fw-semibold">
+                                @booking.Venue?.Name
+                                <br /><small class="text-muted fw-normal"><i class="bi bi-geo-alt me-1"></i>@booking.Venue?.Location</small>
+                            </td>
                             <td class="align-middle">@booking.Event?.Name</td>
                             <td class="align-middle">@booking.StartDate.ToString("dd MMM yyyy")</td>
                             <td class="align-middle">@booking.EndDate.ToString("dd MMM yyyy")</td>

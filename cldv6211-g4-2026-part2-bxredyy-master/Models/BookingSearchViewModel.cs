@@ -4,8 +4,9 @@ namespace EventEase.Models
     //              It carries the user's search term AND the joined results
     public class BookingSearchViewModel
     {
-        // null/empty = "show all bookings". Otherwise we filter by this term.
         public string? SearchTerm { get; set; }
+        // "id", "event", "venue", "reference", or null/empty = search all fields
+        public string? SearchField { get; set; }
         public IEnumerable<BookingDisplayViewModel> Bookings { get; set; } = new List<BookingDisplayViewModel>();
     }
 

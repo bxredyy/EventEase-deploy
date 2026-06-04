@@ -16,6 +16,10 @@
         <dl class="row">
             <dt class="col-sm-4"><i class="bi bi-card-text me-2 text-primary"></i>Description</dt>
             <dd class="col-sm-8">@(Model.Description ?? "No description provided.")</dd>
+            <dt class="col-sm-4"><i class="bi bi-calendar-event me-2 text-success"></i>Start Date</dt>
+            <dd class="col-sm-8">@Model.StartDate.ToString("dd MMM yyyy")</dd>
+            <dt class="col-sm-4"><i class="bi bi-calendar-check me-2 text-success"></i>End Date</dt>
+            <dd class="col-sm-8">@Model.EndDate.ToString("dd MMM yyyy")</dd>
             <dt class="col-sm-4"><i class="bi bi-journal-check me-2 text-warning"></i>Bookings</dt>
             <dd class="col-sm-8">@Model.Bookings.Count active booking(s)</dd>
         </dl>

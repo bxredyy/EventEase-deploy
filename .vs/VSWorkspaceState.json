@@ -2,9 +2,8 @@
   "ExpandedNodes": [
     "",
     "\\cldv6211-g4-2026-part2-bxredyy-master",
-    "\\cldv6211-g4-2026-part2-bxredyy-master\\Controllers",
-    "\\cldv6211-g4-2026-part2-bxredyy-master\\Migrations"
+    "\\cldv6211-g4-2026-part2-bxredyy-master\\Controllers"
   ],
-  "SelectedNode": "\\cldv6211-g4-2026-part2-bxredyy-master\\Controllers\\EventsController.cs",
+  "SelectedNode": "\\cldv6211-g4-2026-part2-bxredyy-master\\Controllers\\BookingsController.cs",
   "PreviewInSolutionExplorer": false
 }

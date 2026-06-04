@@ -3,8 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventEase.Data
 {
-    // POE Part 1B: The EF Core "DbContext"
-    // POE Part 1C: EF reads the connection string from appsettings.json 
+    // POE Part 1B: The EF Core "DbContext" — the bridge between our C# models
+    //              and the SQL LocalDB database. Every CRUD operation in the
+    //              controllers goes through this class.
+    // POE Part 1C: EF reads the connection string from appsettings.json (set up
+    //              in Program.cs) so the DbContext talks to the LocalDB instance.
     public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
@@ -17,26 +20,35 @@ namespace EventEase.Data
         public DbSet<Event> Events { get; set; }
         public DbSet<Booking> Bookings { get; set; }
 
-        // OnModelCreating uses the "Fluent API" 
+        // OnModelCreating uses the "Fluent API" — extra rules that go beyond
+        // what the [Required]/[StringLength] attributes can express.
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // POE Part 2B: ON DELETE RESTRICT 
+            // POE Part 2B: ON DELETE RESTRICT — the database itself REFUSES to
+            //              delete a Venue if any Booking still references it.
+            //              This is a second line of defence on top of the
+            //              controller check (venue.Bookings.Any()).
             modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Venue)
                 .WithMany(v => v.Bookings)
                 .HasForeignKey(b => b.VenueId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // POE Part 2B: Same restrict rule for Events
+            // POE Part 2B: Same restrict rule for Events — protects the
+            //              database from orphaned booking rows.
             modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Event)
                 .WithMany(e => e.Bookings)
                 .HasForeignKey(b => b.EventId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // POE Part 1B: Seed data
+            // POE Part 1B: Seed data — three Venues and three Events that EF
+            //              inserts when the migration runs. Means the marker
+            //              sees a populated database the first time they run.
+            //              ImageUrl uses placeholder URLs (Unsplash) as required
+            //              by Part 1's "use placeholder URLs" instruction.
             modelBuilder.Entity<Venue>().HasData(
                 new Venue
                 {

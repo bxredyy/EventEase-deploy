@@ -1,6 +1,9 @@
 @model EventEase.Models.BookingFormViewModel
 @{
     ViewData["Title"] = "Create Booking";
+    // Build a JS lookup of eventId → {start, end} so dates update on selection
+    var eventDates = ViewBag.EventDates as Dictionary<int, (DateTime Start, DateTime End)>
+                     ?? new Dictionary<int, (DateTime, DateTime)>();
 }
 
 <div class="row justify-content-center">
@@ -23,27 +26,21 @@
 
                     <div class="mb-3">
                         <label asp-for="EventId" class="form-label fw-semibold">Event</label>
-                        <select asp-for="EventId" asp-items="Model.Events" class="form-select">
+                        <select asp-for="EventId" asp-items="Model.Events" class="form-select" id="eventSelect">
                             <option value="">-- Select an Event --</option>
                         </select>
                         <span asp-validation-for="EventId" class="text-danger small"></span>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="StartDate" class="form-label fw-semibold"></label>
-                            <input asp-for="StartDate" class="form-control" type="date" />
-                            <span asp-validation-for="StartDate" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="EndDate" class="form-label fw-semibold"></label>
-                            <input asp-for="EndDate" class="form-control" type="date" />
-                            <span asp-validation-for="EndDate" class="text-danger small"></span>
-                        </div>
+                    <div id="eventDatesPanel" class="alert alert-info d-none">
+                        <i class="bi bi-calendar-event me-2"></i>
+                        <strong>Event scheduled:</strong>
+                        <span id="eventDateDisplay"></span>
+                        <br /><small class="text-muted">Booking dates are set automatically from the event schedule.</small>
                     </div>
 
-                    <div class="alert alert-info small">
-                        <i class="bi bi-info-circle me-2"></i>
+                    <div class="alert alert-light border small">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>
                         A unique booking reference (e.g. <strong>EE-20260508-AB12CD</strong>) will be generated automatically.
                     </div>
 
@@ -63,4 +60,36 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Event date lookup populated server-side
+        const eventDates = {
+            @foreach (var item in Model.Events)
+            {
+                if (int.TryParse(item.Value, out var eid) && ViewBag.EventDatesMap != null)
+                {
+                    // dates are embedded in the option text by the controller
+                }
+            }
+        };
+
+        document.getElementById('eventSelect').addEventListener('change', function () {
+            const selected = this.options[this.selectedIndex];
+            const panel = document.getElementById('eventDatesPanel');
+            const display = document.getElementById('eventDateDisplay');
+
+            if (selected.value) {
+                // Extract dates from the option text (format: "Name (dd MMM yyyy – dd MMM yyyy)")
+                const match = selected.text.match(/\((.+)\)$/);
+                if (match) {
+                    display.textContent = ' ' + match[1];
+                    panel.classList.remove('d-none');
+                }
+            } else {
+                panel.classList.add('d-none');
+            }
+        });
+
+        // Trigger on page load if an event is pre-selected
+        document.getElementById('eventSelect').dispatchEvent(new Event('change'));
+    </script>
 }

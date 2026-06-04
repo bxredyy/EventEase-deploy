@@ -6,11 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventEase.Controllers
 {
-    // POE Part 1B: Full CRUD controller for Bookings
-    // POE Part 2B: Prevents double bookings and shows
-    //              clear error messages when validation fails
-    // POE Part 2C: Provides the consolidated Search view that joins
-    //              Booking + Venue + Event into one screen
     public class BookingsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -20,7 +15,7 @@ namespace EventEase.Controllers
             _context = context;
         }
 
-        // GET: /Bookings... list ALL bookings with venue + event names included
+        // GET: /Bookings
         public async Task<IActionResult> Index()
         {
             var bookings = await _context.Bookings
@@ -44,14 +39,11 @@ namespace EventEase.Controllers
             return View(booking);
         }
 
-        // GET: /Bookings/Create — pre-populates the dropdowns.
+        // GET: /Bookings/Create
         public async Task<IActionResult> Create()
         {
             var viewModel = new BookingFormViewModel
             {
-                // Sensible defaults so the date pickers aren't blank.
-                StartDate = DateTime.Today,
-                EndDate = DateTime.Today.AddDays(1),
                 Venues = await GetVenueSelectList(),
                 Events = await GetEventSelectList()
             };
@@ -65,40 +57,41 @@ namespace EventEase.Controllers
         {
             if (ModelState.IsValid)
             {
-                // POE Part 2B: Sanity check — end date can't be before start.
-                if (viewModel.EndDate < viewModel.StartDate)
+                // Fetch the selected event to get its scheduled dates.
+                // Booking dates are derived from the event — not entered manually by the user.
+                var selectedEvent = await _context.Events.FindAsync(viewModel.EventId);
+                if (selectedEvent == null)
                 {
-                    ModelState.AddModelError("EndDate", "End date cannot be earlier than start date.");
+                    ModelState.AddModelError("EventId", "Selected event not found.");
                     viewModel.Venues = await GetVenueSelectList(viewModel.VenueId);
                     viewModel.Events = await GetEventSelectList(viewModel.EventId);
                     return View(viewModel);
                 }
 
-                // POE Part 2B: DOUBLE-BOOKING PREVENTION.
-                // Two date ranges overlap if: A.start < B.end AND A.end > B.start.
-                // We check this against every existing booking for the SAME venue.
-                // If anything overlaps, we refuse the booking and tell the user.
+                // Double-booking check: prevent the same venue from being booked
+                // during an overlapping event period. Uses the EVENT's dates, not
+                // a separate user-entered date range.
                 bool hasConflict = await _context.Bookings.AnyAsync(b =>
                     b.VenueId == viewModel.VenueId &&
-                    b.StartDate < viewModel.EndDate &&
-                    b.EndDate > viewModel.StartDate);
+                    b.Event!.StartDate < selectedEvent.EndDate &&
+                    b.Event!.EndDate > selectedEvent.StartDate);
 
                 if (hasConflict)
                 {
-                    TempData["Error"] = "This venue is already booked for the selected date range. Please choose different dates or a different venue.";
+                    TempData["Error"] = $"This venue is already booked for an event that overlaps with '{selectedEvent.Name}' " +
+                                        $"({selectedEvent.StartDate:dd MMM yyyy} – {selectedEvent.EndDate:dd MMM yyyy}). " +
+                                        "Please choose a different venue or event.";
                     viewModel.Venues = await GetVenueSelectList(viewModel.VenueId);
                     viewModel.Events = await GetEventSelectList(viewModel.EventId);
                     return View(viewModel);
                 }
 
-                // Map the ViewModel onto the actual entity, then save.
-                // The booking reference is auto-generated (POE brief: "unique booking IDs").
                 var booking = new Booking
                 {
                     VenueId = viewModel.VenueId,
                     EventId = viewModel.EventId,
-                    StartDate = viewModel.StartDate,
-                    EndDate = viewModel.EndDate,
+                    StartDate = selectedEvent.StartDate,
+                    EndDate = selectedEvent.EndDate,
                     BookingReference = GenerateBookingReference()
                 };
 
@@ -108,7 +101,6 @@ namespace EventEase.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // ModelState was invalid — re-show the form with the dropdowns repopulated.
             viewModel.Venues = await GetVenueSelectList(viewModel.VenueId);
             viewModel.Events = await GetEventSelectList(viewModel.EventId);
             return View(viewModel);
@@ -119,18 +111,19 @@ namespace EventEase.Controllers
         {
             if (id == null) return NotFound();
 
-            var booking = await _context.Bookings.FindAsync(id);
+            var booking = await _context.Bookings
+                .Include(b => b.Event)
+                .FirstOrDefaultAsync(b => b.BookingId == id);
             if (booking == null) return NotFound();
 
-            // Project the entity into the form ViewModel.
             var viewModel = new BookingFormViewModel
             {
                 BookingId = booking.BookingId,
                 VenueId = booking.VenueId,
                 EventId = booking.EventId,
-                StartDate = booking.StartDate,
-                EndDate = booking.EndDate,
                 BookingReference = booking.BookingReference,
+                EventStartDate = booking.Event?.StartDate,
+                EventEndDate = booking.Event?.EndDate,
                 Venues = await GetVenueSelectList(booking.VenueId),
                 Events = await GetEventSelectList(booking.EventId)
             };
@@ -146,27 +139,27 @@ namespace EventEase.Controllers
 
             if (ModelState.IsValid)
             {
-                if (viewModel.EndDate < viewModel.StartDate)
+                var selectedEvent = await _context.Events.FindAsync(viewModel.EventId);
+                if (selectedEvent == null)
                 {
-                    ModelState.AddModelError("EndDate", "End date cannot be earlier than start date.");
+                    ModelState.AddModelError("EventId", "Selected event not found.");
                     viewModel.Venues = await GetVenueSelectList(viewModel.VenueId);
                     viewModel.Events = await GetEventSelectList(viewModel.EventId);
                     return View(viewModel);
                 }
 
-                // POE Part 2B: Same overlap check — but we EXCLUDE this booking
-                //              from the conflict search (b.BookingId != ...),
-                //              otherwise editing a booking would always
-                //              "conflict" with itself
+                // Double-booking check — exclude the current booking from conflict search.
                 bool hasConflict = await _context.Bookings.AnyAsync(b =>
                     b.VenueId == viewModel.VenueId &&
                     b.BookingId != viewModel.BookingId &&
-                    b.StartDate < viewModel.EndDate &&
-                    b.EndDate > viewModel.StartDate);
+                    b.Event!.StartDate < selectedEvent.EndDate &&
+                    b.Event!.EndDate > selectedEvent.StartDate);
 
                 if (hasConflict)
                 {
-                    TempData["Error"] = "This venue is already booked for the selected date range. Please choose different dates or a different venue.";
+                    TempData["Error"] = $"This venue is already booked for an event that overlaps with '{selectedEvent.Name}' " +
+                                        $"({selectedEvent.StartDate:dd MMM yyyy} – {selectedEvent.EndDate:dd MMM yyyy}). " +
+                                        "Please choose a different venue or event.";
                     viewModel.Venues = await GetVenueSelectList(viewModel.VenueId);
                     viewModel.Events = await GetEventSelectList(viewModel.EventId);
                     return View(viewModel);
@@ -179,8 +172,8 @@ namespace EventEase.Controllers
 
                     booking.VenueId = viewModel.VenueId;
                     booking.EventId = viewModel.EventId;
-                    booking.StartDate = viewModel.StartDate;
-                    booking.EndDate = viewModel.EndDate;
+                    booking.StartDate = selectedEvent.StartDate;
+                    booking.EndDate = selectedEvent.EndDate;
 
                     _context.Update(booking);
                     await _context.SaveChangesAsync();
@@ -227,10 +220,8 @@ namespace EventEase.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // POE Part 2C: The CONSOLIDATED booking view + simple search.
-        //              Booking specialists can filter by booking ID,
-        //              booking reference, event name, OR venue name.
-        public async Task<IActionResult> Search(string? searchTerm)
+        // GET: /Bookings/Search
+        public async Task<IActionResult> Search(string? searchTerm, string? searchField)
         {
             var query = _context.Bookings
                 .Include(b => b.Venue)
@@ -239,23 +230,28 @@ namespace EventEase.Controllers
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                // .ToLower() makes the search case-insensitive 
-                // .
                 var term = searchTerm.Trim().ToLower();
-                query = query.Where(b =>
-                    b.BookingId.ToString().Contains(term) ||
-                    b.BookingReference.ToLower().Contains(term) ||
-                    b.Event!.Name.ToLower().Contains(term) ||
-                    b.Venue!.Name.ToLower().Contains(term));
+
+                query = searchField switch
+                {
+                    "id" => query.Where(b => b.BookingId.ToString().Contains(term)),
+                    "event" => query.Where(b => b.Event!.Name.ToLower().Contains(term)),
+                    "venue" => query.Where(b => b.Venue!.Name.ToLower().Contains(term)),
+                    "reference" => query.Where(b => b.BookingReference.ToLower().Contains(term)),
+                    _ => query.Where(b =>
+                            b.BookingId.ToString().Contains(term) ||
+                            b.BookingReference.ToLower().Contains(term) ||
+                            b.Event!.Name.ToLower().Contains(term) ||
+                            b.Venue!.Name.ToLower().Contains(term))
+                };
             }
 
             var results = await query.ToListAsync();
 
-            // Project into the flat display ViewModel — keeps the .cshtml
-            // simple (no need to access nested b.Venue.Name in the view)
             var viewModel = new BookingSearchViewModel
             {
                 SearchTerm = searchTerm,
+                SearchField = searchField,
                 Bookings = results.Select(b => new BookingDisplayViewModel
                 {
                     BookingId = b.BookingId,
@@ -273,11 +269,6 @@ namespace EventEase.Controllers
             return View(viewModel);
         }
 
-        
-
-        // Builds the Venue dropdown for the booking form. The "Selected"
-        // flag pre-selects whatever the user previously chose (used on
-        // re-display after a validation error or when editing)
         private async Task<IEnumerable<SelectListItem>> GetVenueSelectList(int selectedId = 0)
         {
             return (await _context.Venues.OrderBy(v => v.Name).ToListAsync())
@@ -295,14 +286,11 @@ namespace EventEase.Controllers
                 .Select(e => new SelectListItem
                 {
                     Value = e.EventId.ToString(),
-                    Text = e.Name,
+                    Text = $"{e.Name} ({e.StartDate:dd MMM yyyy} – {e.EndDate:dd MMM yyyy})",
                     Selected = e.EventId == selectedId
                 });
         }
 
-        // Generates a human-readable, unique reference like EE-20260508-AB12CD
-        // The date helps booking specialists recognise when the booking was
-        // made; the 6-char GUID slice keeps it unique without being huge
         private static string GenerateBookingReference()
         {
             return $"EE-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";

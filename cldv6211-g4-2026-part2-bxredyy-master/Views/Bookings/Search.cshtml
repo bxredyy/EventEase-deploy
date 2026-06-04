@@ -10,26 +10,63 @@
     </a>
 </div>
 
-<div class="card mb-4">
+<div class="card mb-3">
     <div class="card-body">
-        <form asp-action="Search" method="get" class="row g-3 align-items-end">
-            <div class="col-md-9">
-                <label class="form-label fw-semibold">Search by Booking ID, Booking Reference, Event Name, or Venue Name</label>
-                <input type="text" name="searchTerm" value="@Model.SearchTerm"
-                       class="form-control form-control-lg"
-                       placeholder="e.g. EE-20260508 or Annual Gala or Grand Hall" />
-            </div>
-            <div class="col-md-3">
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-search me-2"></i>Search
-                    </button>
-                    @if (!string.IsNullOrEmpty(Model.SearchTerm))
+        <form asp-action="Search" method="get">
+            <div class="mb-2">
+                <label class="form-label fw-semibold">Search Field</label>
+                <div class="d-flex flex-wrap gap-2">
+                    @{
+                        var fields = new[]
+                        {
+                            ("", "All Fields", "bi-search"),
+                            ("id", "Booking ID", "bi-hash"),
+                            ("reference", "Reference", "bi-bookmark"),
+                            ("event", "Event Name", "bi-calendar3"),
+                            ("venue", "Venue Name", "bi-building")
+                        };
+                    }
+                    @foreach (var (val, label, icon) in fields)
                     {
-                        <a asp-action="Search" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle me-2"></i>Clear
+                        var active = (Model.SearchField ?? "") == val ? "btn-primary" : "btn-outline-secondary";
+                        <a href="@Url.Action("Search", new { searchTerm = Model.SearchTerm, searchField = val })"
+                           class="btn btn-sm @active">
+                            <i class="bi @icon me-1"></i>@label
                         </a>
                     }
+                </div>
+            </div>
+
+            <input type="hidden" name="searchField" value="@Model.SearchField" />
+
+            <div class="row g-2 align-items-end mt-1">
+                <div class="col-md-9">
+                    @{
+                        var placeholder = Model.SearchField switch
+                        {
+                            "id" => "e.g. 1 or 42",
+                            "reference" => "e.g. EE-20260508-AB12CD",
+                            "event" => "e.g. Annual Gala or Tech Summit",
+                            "venue" => "e.g. Grand Hall or Sunset Pavilion",
+                            _ => "Search by ID, reference, event name, or venue name…"
+                        };
+                    }
+                    <input type="text" name="searchTerm" value="@Model.SearchTerm"
+                           class="form-control form-control-lg"
+                           placeholder="@placeholder" />
+                </div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-search me-2"></i>Search
+                        </button>
+                        @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                        {
+                            <a asp-action="Search" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Clear
+                            </a>
+                        }
+                    </div>
                 </div>
             </div>
         </form>
@@ -38,9 +75,18 @@
 
 @if (!string.IsNullOrEmpty(Model.SearchTerm))
 {
-    <p class="text-muted">
-        <i class="bi bi-filter me-2"></i>
-        Showing <strong>@Model.Bookings.Count()</strong> result(s) for "<strong>@Model.SearchTerm</strong>"
+    var fieldLabel = Model.SearchField switch
+    {
+        "id" => "Booking ID",
+        "reference" => "Reference",
+        "event" => "Event Name",
+        "venue" => "Venue Name",
+        _ => "All Fields"
+    };
+    <p class="text-muted mb-3">
+        <i class="bi bi-filter me-1"></i>
+        <strong>@Model.Bookings.Count()</strong> result(s) for
+        "<strong>@Model.SearchTerm</strong>" in <strong>@fieldLabel</strong>
     </p>
 }
 
@@ -54,7 +100,7 @@
         }
         else
         {
-            <span>No bookings found matching "<strong>@Model.SearchTerm</strong>". Try a different search term.</span>
+            <span>No bookings found for "<strong>@Model.SearchTerm</strong>". Try a different term or search field.</span>
         }
     </div>
 }

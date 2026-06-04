@@ -35,7 +35,13 @@ namespace EventEase.Services
         {
             if (_containerClient != null) return _containerClient;
 
-            var blobServiceClient = new BlobServiceClient(_connectionString);
+            // Short timeout so a missing Azurite emulator fails in seconds, not minutes.
+            // The Azure SDK default is 100 s × 3 retries = ~5 minutes of hanging.
+            var options = new BlobClientOptions();
+            options.Retry.MaxRetries = 1;
+            options.Retry.NetworkTimeout = TimeSpan.FromSeconds(8);
+
+            var blobServiceClient = new BlobServiceClient(_connectionString, options);
             var client = blobServiceClient.GetBlobContainerClient(_containerName);
             await client.CreateIfNotExistsAsync(PublicAccessType.Blob);
             _containerClient = client;

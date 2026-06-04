@@ -14,11 +14,8 @@ namespace EventEase.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IBlobService _blobService;
 
-        private static readonly string[] AllowedImageExtensions =
-            { "".jpg"", "".jpeg"", "".png"", "".gif"", "".webp"" };
-        private static readonly string[] AllowedImageMimeTypes =
-            { ""image/jpeg"", ""image/png"", ""image/gif"", ""image/webp"" };
-
+        private static readonly string[] AllowedImageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        private static readonly string[] AllowedImageMimeTypes = { "image/jpeg", "image/png", "image/gif", "image/webp" };
 
         public EventsController(ApplicationDbContext context, IBlobService blobService)
         {
@@ -57,26 +54,21 @@ namespace EventEase.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Event ev, IFormFile? imageFile)
         {
+            // Validate event dates
             if (ev.EndDate < ev.StartDate)
-                ModelState.AddModelError(""EndDate"", ""End date cannot be earlier than start date."");
-
-
+                ModelState.AddModelError("EndDate", "End date cannot be earlier than start date.");
 
             if (ModelState.IsValid)
             {
-                // POE Part 2A: Upload to Azurite if a file was attached
                 if (imageFile != null && imageFile.Length > 0)
                 {
-
                     var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
                     var mime = imageFile.ContentType.ToLowerInvariant();
                     if (!AllowedImageExtensions.Contains(ext) || !AllowedImageMimeTypes.Contains(mime))
                     {
-                        ModelState.AddModelError(""imageFile"",
-                            ""Only image files are allowed(JPG, JPEG, PNG, GIF, WebP)."");
+                        ModelState.AddModelError("imageFile", "Only image files are allowed (JPG, JPEG, PNG, GIF, WebP).");
                         return View(ev);
                     }
-
 
                     try
                     {
@@ -119,28 +111,22 @@ namespace EventEase.Controllers
             if (id != ev.EventId) return NotFound();
 
             if (ev.EndDate < ev.StartDate)
-                ModelState.AddModelError(""EndDate"", ""End date cannot be earlier than start date."");
-
+                ModelState.AddModelError("EndDate", "End date cannot be earlier than start date.");
 
             if (ModelState.IsValid)
             {
-                // POE Part 2A: Blob upload isolated
                 if (imageFile != null && imageFile.Length > 0)
                 {
-
+                    var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                    var mime = imageFile.ContentType.ToLowerInvariant();
+                    if (!AllowedImageExtensions.Contains(ext) || !AllowedImageMimeTypes.Contains(mime))
                     {
-                        var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
-                        var mime = imageFile.ContentType.ToLowerInvariant();
-                        if (!AllowedImageExtensions.Contains(ext) || !AllowedImageMimeTypes.Contains(mime))
-                        {
-                            ModelState.AddModelError(""imageFile"",
-                                ""Only image files are allowed(JPG, JPEG, PNG, GIF, WebP)."");
-                            return View(ev);
-                        }
+                        ModelState.AddModelError("imageFile", "Only image files are allowed (JPG, JPEG, PNG, GIF, WebP).");
+                        return View(ev);
+                    }
 
-
-                        try
-                        {
+                    try
+                    {
                         if (!string.IsNullOrEmpty(ev.ImageUrl) &&
                             (ev.ImageUrl.Contains("127.0.0.1") || ev.ImageUrl.Contains("blob.core")))
                         {

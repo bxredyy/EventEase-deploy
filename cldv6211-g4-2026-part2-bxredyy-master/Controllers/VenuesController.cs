@@ -14,7 +14,9 @@ namespace EventEase.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IBlobService _blobService;
 
-        // DI gives us BOTH the database context and the blob service
+        private static readonly string[] AllowedImageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        private static readonly string[] AllowedImageMimeTypes = { "image/jpeg", "image/png", "image/gif", "image/webp" };
+
         public VenuesController(ApplicationDbContext context, IBlobService blobService)
         {
             _context = context;
@@ -59,10 +61,16 @@ namespace EventEase.Controllers
             // ModelState.IsValid checks every Data Annotation on Venue
             if (ModelState.IsValid)
             {
-                // POE Part 2A: If the user picked a file, push it to Azurite
-                //              and store the returned URL on the venue
                 if (imageFile != null && imageFile.Length > 0)
                 {
+                    var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                    var mime = imageFile.ContentType.ToLowerInvariant();
+                    if (!AllowedImageExtensions.Contains(ext) || !AllowedImageMimeTypes.Contains(mime))
+                    {
+                        ModelState.AddModelError("imageFile", "Only image files are allowed (JPG, JPEG, PNG, GIF, WebP).");
+                        return View(venue);
+                    }
+
                     try
                     {
                         venue.ImageUrl = await _blobService.UploadImageAsync(imageFile);
@@ -75,7 +83,6 @@ namespace EventEase.Controllers
                 }
                 else if (string.IsNullOrEmpty(venue.ImageUrl))
                 {
-                    // Fallback to a placeholder so cards always have an image
                     venue.ImageUrl = "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800";
                 }
 
@@ -110,12 +117,16 @@ namespace EventEase.Controllers
 
             if (ModelState.IsValid)
             {
-                // POE Part 2A: Blob upload is isolated in its own try/catch so
-                //              a failed upload never crashes the whole action
-                //              If Azurite is down the venue still saves; the
-                //              user sees a yellow warning instead of a 500
                 if (imageFile != null && imageFile.Length > 0)
                 {
+                    var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                    var mime = imageFile.ContentType.ToLowerInvariant();
+                    if (!AllowedImageExtensions.Contains(ext) || !AllowedImageMimeTypes.Contains(mime))
+                    {
+                        ModelState.AddModelError("imageFile", "Only image files are allowed (JPG, JPEG, PNG, GIF, WebP).");
+                        return View(venue);
+                    }
+
                     try
                     {
                         if (!string.IsNullOrEmpty(venue.ImageUrl) &&
