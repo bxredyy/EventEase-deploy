@@ -18,6 +18,17 @@ namespace EventEase.Models
         [Display(Name = "Description")]
         public string? Description { get; set; }
 
+        [Required(ErrorMessage = ""Event start date is required."")]
+        [DataType(DataType.Date)]
+        [Display(Name = ""Start Date"")]
+        public DateTime StartDate { get; set; }
+
+        [Required(ErrorMessage = ""Event end date is required."")]
+        [DataType(DataType.Date)]
+        [Display(Name = ""End Date"")]
+        public DateTime EndDate { get; set; }
+
+
         // POE Part 2A: Stored as an Azurite blob URL when uploaded.
         [Display(Name = "Event Image")]
         public string? ImageUrl { get; set; }
