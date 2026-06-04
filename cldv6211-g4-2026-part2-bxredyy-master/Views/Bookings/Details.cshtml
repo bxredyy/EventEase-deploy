@@ -1,0 +1,51 @@
+@model EventEase.Models.Booking
+@{
+    ViewData["Title"] = "Booking Details";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="bi bi-journal-check me-2"></i>Booking Details</h4>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Booking Reference</dt>
+                    <dd class="col-sm-8"><span class="badge bg-primary fs-6">@Model.BookingReference</span></dd>
+
+                    <dt class="col-sm-4">Venue</dt>
+                    <dd class="col-sm-8"><i class="bi bi-building me-1 text-muted"></i>@Model.Venue?.Name</dd>
+
+                    <dt class="col-sm-4">Location</dt>
+                    <dd class="col-sm-8"><i class="bi bi-geo-alt me-1 text-muted"></i>@Model.Venue?.Location</dd>
+
+                    <dt class="col-sm-4">Capacity</dt>
+                    <dd class="col-sm-8"><i class="bi bi-people me-1 text-muted"></i>@Model.Venue?.Capacity.ToString("N0") guests</dd>
+
+                    <dt class="col-sm-4">Event</dt>
+                    <dd class="col-sm-8"><i class="bi bi-calendar3 me-1 text-muted"></i>@Model.Event?.Name</dd>
+
+                    <dt class="col-sm-4">Start Date</dt>
+                    <dd class="col-sm-8">@Model.StartDate.ToString("dd MMMM yyyy")</dd>
+
+                    <dt class="col-sm-4">End Date</dt>
+                    <dd class="col-sm-8">@Model.EndDate.ToString("dd MMMM yyyy")</dd>
+
+                    <dt class="col-sm-4">Duration</dt>
+                    <dd class="col-sm-8">@((Model.EndDate - Model.StartDate).Days + 1) day(s)</dd>
+                </dl>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.BookingId" class="btn btn-warning">
+                        <i class="bi bi-pencil me-2"></i>Edit
+                    </a>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

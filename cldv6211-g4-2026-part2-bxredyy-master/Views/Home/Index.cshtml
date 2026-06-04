@@ -1,0 +1,94 @@
+@model EventEase.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="p-4 bg-dark text-white rounded-3 mb-4">
+            <h1 class="display-6 fw-bold">
+                <i class="bi bi-calendar-event-fill text-warning me-3"></i>EventEase Booking System
+            </h1>
+            <p class="lead mb-0">Welcome, Booking Specialist. Manage venues, events, and bookings from one place.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card stat-card bg-primary text-white h-100">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-building display-4"></i>
+                <h2 class="mt-2 display-4 fw-bold">@Model.VenueCount</h2>
+                <p class="fs-5 mb-0">Total Venues</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-center pb-3">
+                <a asp-controller="Venues" asp-action="Index" class="btn btn-light btn-sm">
+                    <i class="bi bi-arrow-right-circle me-1"></i>Manage Venues
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card bg-success text-white h-100">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-calendar3 display-4"></i>
+                <h2 class="mt-2 display-4 fw-bold">@Model.EventCount</h2>
+                <p class="fs-5 mb-0">Total Events</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-center pb-3">
+                <a asp-controller="Events" asp-action="Index" class="btn btn-light btn-sm">
+                    <i class="bi bi-arrow-right-circle me-1"></i>Manage Events
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card bg-warning text-dark h-100">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-journal-check display-4"></i>
+                <h2 class="mt-2 display-4 fw-bold">@Model.BookingCount</h2>
+                <p class="fs-5 mb-0">Active Bookings</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-center pb-3">
+                <a asp-controller="Bookings" asp-action="Index" class="btn btn-dark btn-sm">
+                    <i class="bi bi-arrow-right-circle me-1"></i>View Bookings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light fw-semibold">
+                Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <a asp-controller="Bookings" asp-action="Create" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle-fill me-2"></i>Create New Booking
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a asp-controller="Venues" asp-action="Create" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-building me-2"></i>Add New Venue
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a asp-controller="Events" asp-action="Create" class="btn btn-outline-success w-100">
+                            <i class="bi bi-calendar-plus me-2"></i>Add New Event
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a asp-controller="Bookings" asp-action="Search" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-search me-2"></i>Search Bookings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

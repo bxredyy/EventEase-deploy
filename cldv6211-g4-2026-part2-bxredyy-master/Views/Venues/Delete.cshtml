@@ -1,0 +1,52 @@
+@model EventEase.Models.Venue
+@{
+    ViewData["Title"] = "Delete Venue";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="bi bi-trash me-2"></i>Delete Venue</h4>
+            </div>
+            <div class="card-body">
+                @if (Model.Bookings.Any())
+                {
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Cannot delete this venue.</strong><br />
+                        This venue has <strong>@Model.Bookings.Count active booking(s)</strong>. Remove all associated bookings first.
+                    </div>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to List
+                    </a>
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Are you sure you want to delete <strong>@Model.Name</strong>? This action cannot be undone.
+                    </div>
+                    <dl class="row">
+                        <dt class="col-sm-4">Venue Name</dt>
+                        <dd class="col-sm-8">@Model.Name</dd>
+                        <dt class="col-sm-4">Location</dt>
+                        <dd class="col-sm-8">@Model.Location</dd>
+                        <dt class="col-sm-4">Capacity</dt>
+                        <dd class="col-sm-8">@Model.Capacity.ToString("N0")</dd>
+                    </dl>
+                    <form asp-action="Delete" method="post">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Yes, Delete
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

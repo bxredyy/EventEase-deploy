@@ -1,0 +1,66 @@
+@model EventEase.Models.BookingFormViewModel
+@{
+    ViewData["Title"] = "Create Booking";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-plus-circle-fill me-2"></i>Create New Booking</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="VenueId" class="form-label fw-semibold">Venue</label>
+                        <select asp-for="VenueId" asp-items="Model.Venues" class="form-select">
+                            <option value="">-- Select a Venue --</option>
+                        </select>
+                        <span asp-validation-for="VenueId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="EventId" class="form-label fw-semibold">Event</label>
+                        <select asp-for="EventId" asp-items="Model.Events" class="form-select">
+                            <option value="">-- Select an Event --</option>
+                        </select>
+                        <span asp-validation-for="EventId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StartDate" class="form-label fw-semibold"></label>
+                            <input asp-for="StartDate" class="form-control" type="date" />
+                            <span asp-validation-for="StartDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EndDate" class="form-label fw-semibold"></label>
+                            <input asp-for="EndDate" class="form-control" type="date" />
+                            <span asp-validation-for="EndDate" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle me-2"></i>
+                        A unique booking reference (e.g. <strong>EE-20260508-AB12CD</strong>) will be generated automatically.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Confirm Booking
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Back to List
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

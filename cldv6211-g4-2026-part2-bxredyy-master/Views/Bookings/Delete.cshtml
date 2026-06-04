@@ -1,0 +1,40 @@
+@model EventEase.Models.Booking
+@{
+    ViewData["Title"] = "Delete Booking";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="bi bi-trash me-2"></i>Delete Booking</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Are you sure you want to delete booking <strong>@Model.BookingReference</strong>? This action cannot be undone.
+                </div>
+                <dl class="row">
+                    <dt class="col-sm-4">Reference</dt>
+                    <dd class="col-sm-8"><span class="badge bg-primary">@Model.BookingReference</span></dd>
+                    <dt class="col-sm-4">Venue</dt>
+                    <dd class="col-sm-8">@Model.Venue?.Name</dd>
+                    <dt class="col-sm-4">Event</dt>
+                    <dd class="col-sm-8">@Model.Event?.Name</dd>
+                    <dt class="col-sm-4">Dates</dt>
+                    <dd class="col-sm-8">@Model.StartDate.ToString("dd MMM yyyy") to @Model.EndDate.ToString("dd MMM yyyy")</dd>
+                </dl>
+                <form asp-action="Delete" method="post">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-2"></i>Yes, Delete
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
