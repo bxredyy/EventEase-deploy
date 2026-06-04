@@ -57,11 +57,27 @@ namespace EventEase.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Event ev, IFormFile? imageFile)
         {
+            if (ev.EndDate < ev.StartDate)
+                ModelState.AddModelError(""EndDate"", ""End date cannot be earlier than start date."");
+
+
+
             if (ModelState.IsValid)
             {
                 // POE Part 2A: Upload to Azurite if a file was attached
                 if (imageFile != null && imageFile.Length > 0)
                 {
+
+                    var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                    var mime = imageFile.ContentType.ToLowerInvariant();
+                    if (!AllowedImageExtensions.Contains(ext) || !AllowedImageMimeTypes.Contains(mime))
+                    {
+                        ModelState.AddModelError(""imageFile"",
+                            ""Only image files are allowed(JPG, JPEG, PNG, GIF, WebP)."");
+                        return View(ev);
+                    }
+
+
                     try
                     {
                         ev.ImageUrl = await _blobService.UploadImageAsync(imageFile);
@@ -101,6 +117,10 @@ namespace EventEase.Controllers
         public async Task<IActionResult> Edit(int id, Event ev, IFormFile? imageFile)
         {
             if (id != ev.EventId) return NotFound();
+
+            if (ev.EndDate < ev.StartDate)
+                ModelState.AddModelError(""EndDate"", ""End date cannot be earlier than start date."");
+
 
             if (ModelState.IsValid)
             {
