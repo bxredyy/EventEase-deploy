@@ -2,9 +2,9 @@
   "ExpandedNodes": [
     "",
     "\\cldv6211-g4-2026-part2-bxredyy-master",
-    "\\cldv6211-g4-2026-part2-bxredyy-master\\Data",
-    "\\cldv6211-g4-2026-part2-bxredyy-master\\Models"
+    "\\cldv6211-g4-2026-part2-bxredyy-master\\Controllers",
+    "\\cldv6211-g4-2026-part2-bxredyy-master\\Migrations"
   ],
-  "SelectedNode": "\\cldv6211-g4-2026-part2-bxredyy-master\\Data\\ApplicationDbContext.cs",
+  "SelectedNode": "\\cldv6211-g4-2026-part2-bxredyy-master\\Controllers\\EventsController.cs",
   "PreviewInSolutionExplorer": false
 }

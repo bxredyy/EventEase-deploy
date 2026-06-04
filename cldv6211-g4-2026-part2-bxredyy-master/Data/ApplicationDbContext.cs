@@ -3,11 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventEase.Data
 {
-    // POE Part 1B: The EF Core "DbContext" — the bridge between our C# models
-    //              and the SQL LocalDB database. Every CRUD operation in the
-    //              controllers goes through this class.
-    // POE Part 1C: EF reads the connection string from appsettings.json (set up
-    //              in Program.cs) so the DbContext talks to the LocalDB instance.
+    // POE Part 1B: The EF Core "DbContext"
+    // POE Part 1C: EF reads the connection string from appsettings.json 
     public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
@@ -20,35 +17,26 @@ namespace EventEase.Data
         public DbSet<Event> Events { get; set; }
         public DbSet<Booking> Bookings { get; set; }
 
-        // OnModelCreating uses the "Fluent API" — extra rules that go beyond
-        // what the [Required]/[StringLength] attributes can express.
+        // OnModelCreating uses the "Fluent API" 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // POE Part 2B: ON DELETE RESTRICT — the database itself REFUSES to
-            //              delete a Venue if any Booking still references it.
-            //              This is a second line of defence on top of the
-            //              controller check (venue.Bookings.Any()).
+            // POE Part 2B: ON DELETE RESTRICT 
             modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Venue)
                 .WithMany(v => v.Bookings)
                 .HasForeignKey(b => b.VenueId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // POE Part 2B: Same restrict rule for Events — protects the
-            //              database from orphaned booking rows.
+            // POE Part 2B: Same restrict rule for Events
             modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Event)
                 .WithMany(e => e.Bookings)
                 .HasForeignKey(b => b.EventId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // POE Part 1B: Seed data — three Venues and three Events that EF
-            //              inserts when the migration runs. Means the marker
-            //              sees a populated database the first time they run.
-            //              ImageUrl uses placeholder URLs (Unsplash) as required
-            //              by Part 1's "use placeholder URLs" instruction.
+            // POE Part 1B: Seed data
             modelBuilder.Entity<Venue>().HasData(
                 new Venue
                 {
@@ -82,6 +70,8 @@ namespace EventEase.Data
                     EventId = 1,
                     Name = "Annual Gala Dinner",
                     Description = "An exclusive black-tie gala dinner celebrating the year's achievements.",
+                    StartDate = new DateTime(2026, 8, 15),
+                    EndDate = new DateTime(2026, 8, 15),
                     ImageUrl = "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800"
                 },
                 new Event
@@ -89,6 +79,8 @@ namespace EventEase.Data
                     EventId = 2,
                     Name = "Tech Summit 2026",
                     Description = "A two-day conference bringing together technology leaders and innovators.",
+                    StartDate = new DateTime(2026, 10, 21),
+                    EndDate = new DateTime(2026, 10, 22),
                     ImageUrl = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800"
                 },
                 new Event
@@ -96,6 +88,8 @@ namespace EventEase.Data
                     EventId = 3,
                     Name = "Wedding Celebration",
                     Description = "A beautiful wedding reception for up to 200 guests.",
+                    StartDate = new DateTime(2026, 12, 5),
+                    EndDate = new DateTime(2026, 12, 5),
                     ImageUrl = "https://images.unsplash.com/photo-1519741497674-611481863552?w=800"
                 }
             );

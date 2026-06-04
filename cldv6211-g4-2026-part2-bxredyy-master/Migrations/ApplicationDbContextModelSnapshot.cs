@@ -68,6 +68,9 @@ namespace EventEase.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -75,6 +78,9 @@ namespace EventEase.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("EventId");
 
@@ -85,22 +91,28 @@ namespace EventEase.Migrations
                         {
                             EventId = 1,
                             Description = "An exclusive black-tie gala dinner celebrating the year's achievements.",
+                            EndDate = new DateTime(2026, 8, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ImageUrl = "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800",
-                            Name = "Annual Gala Dinner"
+                            Name = "Annual Gala Dinner",
+                            StartDate = new DateTime(2026, 8, 15, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             EventId = 2,
                             Description = "A two-day conference bringing together technology leaders and innovators.",
+                            EndDate = new DateTime(2026, 10, 22, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ImageUrl = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800",
-                            Name = "Tech Summit 2026"
+                            Name = "Tech Summit 2026",
+                            StartDate = new DateTime(2026, 10, 21, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             EventId = 3,
                             Description = "A beautiful wedding reception for up to 200 guests.",
+                            EndDate = new DateTime(2026, 12, 5, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ImageUrl = "https://images.unsplash.com/photo-1519741497674-611481863552?w=800",
-                            Name = "Wedding Celebration"
+                            Name = "Wedding Celebration",
+                            StartDate = new DateTime(2026, 12, 5, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 

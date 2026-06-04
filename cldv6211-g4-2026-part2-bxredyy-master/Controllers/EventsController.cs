@@ -14,6 +14,12 @@ namespace EventEase.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IBlobService _blobService;
 
+        private static readonly string[] AllowedImageExtensions =
+            { "".jpg"", "".jpeg"", "".png"", "".gif"", "".webp"" };
+        private static readonly string[] AllowedImageMimeTypes =
+            { ""image/jpeg"", ""image/png"", ""image/gif"", ""image/webp"" };
+
+
         public EventsController(ApplicationDbContext context, IBlobService blobService)
         {
             _context = context;
@@ -98,12 +104,23 @@ namespace EventEase.Controllers
 
             if (ModelState.IsValid)
             {
-                // POE Part 2A: Blob upload isolated so a failed upload never
-                //              crashes the action — event still saves to DB
+                // POE Part 2A: Blob upload isolated
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    try
+
                     {
+                        var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                        var mime = imageFile.ContentType.ToLowerInvariant();
+                        if (!AllowedImageExtensions.Contains(ext) || !AllowedImageMimeTypes.Contains(mime))
+                        {
+                            ModelState.AddModelError(""imageFile"",
+                                ""Only image files are allowed(JPG, JPEG, PNG, GIF, WebP)."");
+                            return View(ev);
+                        }
+
+
+                        try
+                        {
                         if (!string.IsNullOrEmpty(ev.ImageUrl) &&
                             (ev.ImageUrl.Contains("127.0.0.1") || ev.ImageUrl.Contains("blob.core")))
                         {
