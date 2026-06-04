@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventEase.Controllers
 {
+    // POE Part 1B/2B/2C/3A: Booking CRUD, double-booking prevention, advanced search.
     public class BookingsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -15,7 +16,6 @@ namespace EventEase.Controllers
             _context = context;
         }
 
-        // GET: /Bookings
         public async Task<IActionResult> Index()
         {
             var bookings = await _context.Bookings
@@ -25,7 +25,6 @@ namespace EventEase.Controllers
             return View(bookings);
         }
 
-        // GET: /Bookings/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -39,7 +38,6 @@ namespace EventEase.Controllers
             return View(booking);
         }
 
-        // GET: /Bookings/Create
         public async Task<IActionResult> Create()
         {
             var viewModel = new BookingFormViewModel
@@ -50,15 +48,13 @@ namespace EventEase.Controllers
             return View(viewModel);
         }
 
-        // POST: /Bookings/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BookingFormViewModel viewModel)
         {
             if (ModelState.IsValid)
             {
-                // Fetch the selected event to get its scheduled dates.
-                // Booking dates are derived from the event — not entered manually by the user.
+                // POE Part 2B: booking dates come from the selected event.
                 var selectedEvent = await _context.Events.FindAsync(viewModel.EventId);
                 if (selectedEvent == null)
                 {
@@ -68,9 +64,7 @@ namespace EventEase.Controllers
                     return View(viewModel);
                 }
 
-                // Double-booking check: prevent the same venue from being booked
-                // during an overlapping event period. Uses the EVENT's dates, not
-                // a separate user-entered date range.
+                // POE Part 2B: prevent double-booking using event dates.
                 bool hasConflict = await _context.Bookings.AnyAsync(b =>
                     b.VenueId == viewModel.VenueId &&
                     b.Event!.StartDate < selectedEvent.EndDate &&
@@ -106,7 +100,6 @@ namespace EventEase.Controllers
             return View(viewModel);
         }
 
-        // GET: /Bookings/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -130,7 +123,6 @@ namespace EventEase.Controllers
             return View(viewModel);
         }
 
-        // POST: /Bookings/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, BookingFormViewModel viewModel)
@@ -148,7 +140,7 @@ namespace EventEase.Controllers
                     return View(viewModel);
                 }
 
-                // Double-booking check — exclude the current booking from conflict search.
+                // POE Part 2B: prevent double-booking, ignoring the booking being edited.
                 bool hasConflict = await _context.Bookings.AnyAsync(b =>
                     b.VenueId == viewModel.VenueId &&
                     b.BookingId != viewModel.BookingId &&
@@ -192,7 +184,6 @@ namespace EventEase.Controllers
             return View(viewModel);
         }
 
-        // GET: /Bookings/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -206,7 +197,6 @@ namespace EventEase.Controllers
             return View(booking);
         }
 
-        // POST: /Bookings/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -220,23 +210,30 @@ namespace EventEase.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /Bookings/Search
-        public async Task<IActionResult> Search(string? searchTerm, string? searchField)
+        // POE Part 3A: advanced search with event type, date range, venue and availability filters.
+        public async Task<IActionResult> Search(
+            string? searchTerm,
+            string? searchField,
+            int? eventTypeId,
+            DateTime? dateFrom,
+            DateTime? dateTo,
+            int? venueId,
+            bool showAvailableOnly = false)
         {
             var query = _context.Bookings
                 .Include(b => b.Venue)
-                .Include(b => b.Event)
+                .Include(b => b.Event!).ThenInclude(e => e.EventType)
                 .AsQueryable();
 
+            // Text search by chosen field.
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 var term = searchTerm.Trim().ToLower();
-
                 query = searchField switch
                 {
-                    "id" => query.Where(b => b.BookingId.ToString().Contains(term)),
-                    "event" => query.Where(b => b.Event!.Name.ToLower().Contains(term)),
-                    "venue" => query.Where(b => b.Venue!.Name.ToLower().Contains(term)),
+                    "id"        => query.Where(b => b.BookingId.ToString().Contains(term)),
+                    "event"     => query.Where(b => b.Event!.Name.ToLower().Contains(term)),
+                    "venue"     => query.Where(b => b.Venue!.Name.ToLower().Contains(term)),
                     "reference" => query.Where(b => b.BookingReference.ToLower().Contains(term)),
                     _ => query.Where(b =>
                             b.BookingId.ToString().Contains(term) ||
@@ -246,12 +243,62 @@ namespace EventEase.Controllers
                 };
             }
 
-            var results = await query.ToListAsync();
+            // Event type filter.
+            if (eventTypeId.HasValue)
+            {
+                query = query.Where(b => b.Event!.EventTypeId == eventTypeId.Value);
+            }
+
+            // Date range filter.
+            if (dateFrom.HasValue)
+            {
+                query = query.Where(b => b.EndDate >= dateFrom.Value);
+            }
+            if (dateTo.HasValue)
+            {
+                query = query.Where(b => b.StartDate <= dateTo.Value);
+            }
+
+            // Venue filter.
+            if (venueId.HasValue)
+            {
+                query = query.Where(b => b.VenueId == venueId.Value);
+            }
+
+            var results = await query
+                .OrderBy(b => b.StartDate)
+                .ToListAsync();
+
+            // Availability filter: list venues that are free in the chosen date range.
+            if (showAvailableOnly && dateFrom.HasValue && dateTo.HasValue)
+            {
+                var occupiedVenueIds = await _context.Bookings
+                    .Where(b => b.StartDate <= dateTo.Value && b.EndDate >= dateFrom.Value)
+                    .Select(b => b.VenueId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var availableVenues = await _context.Venues
+                    .Where(v => !occupiedVenueIds.Contains(v.VenueId))
+                    .OrderBy(v => v.Name)
+                    .ToListAsync();
+
+                ViewBag.AvailableVenues = availableVenues;
+                ViewBag.AvailabilityDateFrom = dateFrom.Value;
+                ViewBag.AvailabilityDateTo = dateTo.Value;
+            }
 
             var viewModel = new BookingSearchViewModel
             {
                 SearchTerm = searchTerm,
                 SearchField = searchField,
+                EventTypeId = eventTypeId,
+                DateFrom = dateFrom,
+                DateTo = dateTo,
+                VenueId = venueId,
+                ShowAvailableOnly = showAvailableOnly,
+                EventTypeOptions = await GetEventTypeSelectList(eventTypeId),
+                VenueOptions = await GetVenueOptionsList(venueId),
                 Bookings = results.Select(b => new BookingDisplayViewModel
                 {
                     BookingId = b.BookingId,
@@ -261,12 +308,36 @@ namespace EventEase.Controllers
                     VenueCapacity = b.Venue?.Capacity ?? 0,
                     EventName = b.Event?.Name ?? "Unknown",
                     EventDescription = b.Event?.Description,
+                    EventTypeName = b.Event?.EventType?.Name,
                     StartDate = b.StartDate,
                     EndDate = b.EndDate
                 }).ToList()
             };
 
             return View(viewModel);
+        }
+
+        // Dropdown helper for the advanced search filters.
+        private async Task<IEnumerable<SelectListItem>> GetEventTypeSelectList(int? selectedId)
+        {
+            return (await _context.EventTypes.OrderBy(t => t.Name).ToListAsync())
+                .Select(t => new SelectListItem
+                {
+                    Value = t.EventTypeId.ToString(),
+                    Text = t.Name,
+                    Selected = selectedId.HasValue && t.EventTypeId == selectedId.Value
+                });
+        }
+
+        private async Task<IEnumerable<SelectListItem>> GetVenueOptionsList(int? selectedId)
+        {
+            return (await _context.Venues.OrderBy(v => v.Name).ToListAsync())
+                .Select(v => new SelectListItem
+                {
+                    Value = v.VenueId.ToString(),
+                    Text = $"{v.Name} (Capacity: {v.Capacity:N0})",
+                    Selected = selectedId.HasValue && v.VenueId == selectedId.Value
+                });
         }
 
         private async Task<IEnumerable<SelectListItem>> GetVenueSelectList(int selectedId = 0)

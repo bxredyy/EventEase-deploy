@@ -2,13 +2,12 @@ using EventEase.Data;
 using EventEase.Models;
 using EventEase.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventEase.Controllers
 {
-    // POE Part 1B: Full CRUD controller for Events
-    // POE Part 2A: Image uploads to Azurite via IBlobService
-    // POE Part 2B: Blocks deletion of any event that has active bookings
+    // POE Part 1B/2A/2B/3A: Event CRUD, Azurite image uploads, delete protection, EventType integration.
     public class EventsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -23,30 +22,43 @@ namespace EventEase.Controllers
             _blobService = blobService;
         }
 
-        // GET: /Events — the list page
         public async Task<IActionResult> Index()
         {
-            var events = await _context.Events.ToListAsync();
+            var events = await _context.Events
+                .Include(e => e.EventType)
+                .ToListAsync();
             return View(events);
         }
 
-        // GET: /Events/Details/5 — pulls related bookings in one query
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
 
             var ev = await _context.Events
                 .Include(e => e.Bookings)
+                .Include(e => e.EventType)
                 .FirstOrDefaultAsync(e => e.EventId == id);
 
             if (ev == null) return NotFound();
             return View(ev);
         }
 
-        // GET: /Events/Create — empty form
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            ViewBag.EventTypes = await GetEventTypeSelectList();
             return View();
+        }
+
+        // POE Part 3A: build the EventType dropdown list.
+        private async Task<IEnumerable<SelectListItem>> GetEventTypeSelectList(int? selectedId = null)
+        {
+            return (await _context.EventTypes.OrderBy(t => t.Name).ToListAsync())
+                .Select(t => new SelectListItem
+                {
+                    Value = t.EventTypeId.ToString(),
+                    Text = t.Name,
+                    Selected = selectedId.HasValue && t.EventTypeId == selectedId.Value
+                });
         }
 
         // POST: /Events/Create
@@ -90,20 +102,20 @@ namespace EventEase.Controllers
                 TempData["Success"] = $"Event '{ev.Name}' created successfully.";
                 return RedirectToAction(nameof(Index));
             }
+            ViewBag.EventTypes = await GetEventTypeSelectList(ev.EventTypeId);
             return View(ev);
         }
 
-        // GET: /Events/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
 
             var ev = await _context.Events.FindAsync(id);
             if (ev == null) return NotFound();
+            ViewBag.EventTypes = await GetEventTypeSelectList(ev.EventTypeId);
             return View(ev);
         }
 
-        // POST: /Events/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Event ev, IFormFile? imageFile)
@@ -154,10 +166,10 @@ namespace EventEase.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
+            ViewBag.EventTypes = await GetEventTypeSelectList(ev.EventTypeId);
             return View(ev);
         }
 
-        // GET: /Events/Delete/5 — confirmation page
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -170,7 +182,6 @@ namespace EventEase.Controllers
             return View(ev);
         }
 
-        // POST: /Events/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -181,14 +192,14 @@ namespace EventEase.Controllers
 
             if (ev == null) return NotFound();
 
-            // POE Part 2B: Refuse to delete an event tied to active bookings
+            // POE Part 2B: block delete if active bookings exist.
             if (ev.Bookings.Any())
             {
                 TempData["Error"] = $"Cannot delete '{ev.Name}' because it has {ev.Bookings.Count} active booking(s). Please remove those bookings first.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Tidy up the blob before removing the DB row
+            // Remove the blob image first.
             if (!string.IsNullOrEmpty(ev.ImageUrl) &&
                 (ev.ImageUrl.Contains("127.0.0.1") || ev.ImageUrl.Contains("blob.core")))
             {

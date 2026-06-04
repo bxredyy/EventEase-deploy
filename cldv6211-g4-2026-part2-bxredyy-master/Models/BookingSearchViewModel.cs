@@ -1,18 +1,45 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.Rendering;
+
 namespace EventEase.Models
 {
-    // POE Part 2C: ViewModel that powers the consolidated Booking Search page
-    //              It carries the user's search term AND the joined results
+    // POE Part 3A: filters for the advanced search page.
     public class BookingSearchViewModel
     {
         public string? SearchTerm { get; set; }
-        // "id", "event", "venue", "reference", or null/empty = search all fields
         public string? SearchField { get; set; }
+
+        [Display(Name = "Event Type")]
+        public int? EventTypeId { get; set; }
+
+        [Display(Name = "Date From")]
+        [DataType(DataType.Date)]
+        public DateTime? DateFrom { get; set; }
+
+        [Display(Name = "Date To")]
+        [DataType(DataType.Date)]
+        public DateTime? DateTo { get; set; }
+
+        [Display(Name = "Venue")]
+        public int? VenueId { get; set; }
+
+        [Display(Name = "Show only available venues")]
+        public bool ShowAvailableOnly { get; set; }
+
+        public IEnumerable<SelectListItem> EventTypeOptions { get; set; } = new List<SelectListItem>();
+        public IEnumerable<SelectListItem> VenueOptions     { get; set; } = new List<SelectListItem>();
+
         public IEnumerable<BookingDisplayViewModel> Bookings { get; set; } = new List<BookingDisplayViewModel>();
+
+        public bool HasActiveFilters =>
+            !string.IsNullOrWhiteSpace(SearchTerm) ||
+            EventTypeId.HasValue ||
+            DateFrom.HasValue ||
+            DateTo.HasValue ||
+            VenueId.HasValue ||
+            ShowAvailableOnly;
     }
 
-    // POE Part 2C: A flattened "row" combining fields from Booking + Venue + Event
-    //              This is the "consolidated view" the rubric asks for —
-    //              the user sees the venue/event NAMES instead of raw IDs
     public class BookingDisplayViewModel
     {
         public int BookingId { get; set; }
@@ -22,6 +49,7 @@ namespace EventEase.Models
         public int VenueCapacity { get; set; }
         public string EventName { get; set; } = string.Empty;
         public string? EventDescription { get; set; }
+        public string? EventTypeName { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
     }

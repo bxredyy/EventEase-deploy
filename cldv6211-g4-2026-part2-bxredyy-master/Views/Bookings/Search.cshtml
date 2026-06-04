@@ -1,20 +1,27 @@
 @model EventEase.Models.BookingSearchViewModel
 @{
-    ViewData["Title"] = "Search Bookings";
+    ViewData["Title"] = "Advanced Search";
+    var availableVenues = ViewBag.AvailableVenues as List<EventEase.Models.Venue>;
+    var availDateFrom = ViewBag.AvailabilityDateFrom as DateTime?;
+    var availDateTo = ViewBag.AvailabilityDateTo as DateTime?;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-search me-2 text-secondary"></i>Search Bookings</h2>
+    <h2><i class="bi bi-funnel-fill me-2 text-secondary"></i>Advanced Search & Filtering</h2>
     <a asp-action="Create" class="btn btn-primary">
         <i class="bi bi-plus-circle-fill me-2"></i>New Booking
     </a>
 </div>
 
-<div class="card mb-3">
+<div class="card mb-3 border-primary">
+    <div class="card-header bg-primary text-white">
+        <i class="bi bi-funnel me-2"></i><strong>Search & Filter Options</strong>
+    </div>
     <div class="card-body">
         <form asp-action="Search" method="get">
-            <div class="mb-2">
-                <label class="form-label fw-semibold">Search Field</label>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">1. Search Field</label>
                 <div class="d-flex flex-wrap gap-2">
                     @{
                         var fields = new[]
@@ -29,78 +36,177 @@
                     @foreach (var (val, label, icon) in fields)
                     {
                         var active = (Model.SearchField ?? "") == val ? "btn-primary" : "btn-outline-secondary";
-                        <a href="@Url.Action("Search", new { searchTerm = Model.SearchTerm, searchField = val })"
-                           class="btn btn-sm @active">
+                        <button type="button" class="btn btn-sm @active js-field-btn" data-val="@val">
                             <i class="bi @icon me-1"></i>@label
-                        </a>
+                        </button>
                     }
+                </div>
+                <input type="hidden" name="searchField" id="searchField" value="@Model.SearchField" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">2. Search Term</label>
+                <input type="text" name="searchTerm" value="@Model.SearchTerm"
+                       class="form-control form-control-lg"
+                       placeholder="Type your search term... or leave empty to use only filters below" />
+            </div>
+
+            <hr />
+
+            <div class="row g-3">
+                <div class="col-md-6 col-lg-3">
+                    <label asp-for="EventTypeId" class="form-label fw-semibold">
+                        <i class="bi bi-tag-fill text-info me-1"></i>Event Type
+                    </label>
+                    <select asp-for="EventTypeId" asp-items="Model.EventTypeOptions" class="form-select">
+                        <option value="">-- Any Type --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <label asp-for="VenueId" class="form-label fw-semibold">
+                        <i class="bi bi-building text-primary me-1"></i>Venue
+                    </label>
+                    <select asp-for="VenueId" asp-items="Model.VenueOptions" class="form-select">
+                        <option value="">-- Any Venue --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <label asp-for="DateFrom" class="form-label fw-semibold">
+                        <i class="bi bi-calendar-event text-success me-1"></i>Date From
+                    </label>
+                    <input asp-for="DateFrom" type="date" class="form-control" />
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <label asp-for="DateTo" class="form-label fw-semibold">
+                        <i class="bi bi-calendar-check text-success me-1"></i>Date To
+                    </label>
+                    <input asp-for="DateTo" type="date" class="form-control" />
                 </div>
             </div>
 
-            <input type="hidden" name="searchField" value="@Model.SearchField" />
-
-            <div class="row g-2 align-items-end mt-1">
-                <div class="col-md-9">
-                    @{
-                        var placeholder = Model.SearchField switch
-                        {
-                            "id" => "e.g. 1 or 42",
-                            "reference" => "e.g. EE-20260508-AB12CD",
-                            "event" => "e.g. Annual Gala or Tech Summit",
-                            "venue" => "e.g. Grand Hall or Sunset Pavilion",
-                            _ => "Search by ID, reference, event name, or venue name…"
-                        };
-                    }
-                    <input type="text" name="searchTerm" value="@Model.SearchTerm"
-                           class="form-control form-control-lg"
-                           placeholder="@placeholder" />
-                </div>
-                <div class="col-md-3">
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-search me-2"></i>Search
-                        </button>
-                        @if (!string.IsNullOrEmpty(Model.SearchTerm))
-                        {
-                            <a asp-action="Search" class="btn btn-outline-secondary">
-                                <i class="bi bi-x-circle me-1"></i>Clear
-                            </a>
-                        }
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <div class="form-check mt-2">
+                        <input asp-for="ShowAvailableOnly" class="form-check-input" />
+                        <label asp-for="ShowAvailableOnly" class="form-check-label">
+                            <i class="bi bi-check-circle text-success me-1"></i>
+                            Show <strong>available venues</strong> (requires a date range — replaces results with a list of free venues in that window)
+                        </label>
                     </div>
                 </div>
+            </div>
+
+            <hr />
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-funnel-fill me-2"></i>Apply Filters
+                </button>
+                <a asp-action="Search" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-x-circle me-2"></i>Clear All
+                </a>
             </div>
         </form>
     </div>
 </div>
 
-@if (!string.IsNullOrEmpty(Model.SearchTerm))
+@if (Model.HasActiveFilters)
 {
-    var fieldLabel = Model.SearchField switch
-    {
-        "id" => "Booking ID",
-        "reference" => "Reference",
-        "event" => "Event Name",
-        "venue" => "Venue Name",
-        _ => "All Fields"
-    };
-    <p class="text-muted mb-3">
-        <i class="bi bi-filter me-1"></i>
-        <strong>@Model.Bookings.Count()</strong> result(s) for
-        "<strong>@Model.SearchTerm</strong>" in <strong>@fieldLabel</strong>
-    </p>
+    <div class="alert alert-light border mb-3">
+        <strong><i class="bi bi-filter-circle me-2"></i>Active filters:</strong>
+        @if (!string.IsNullOrEmpty(Model.SearchTerm))
+        {
+            var fieldLabel = Model.SearchField switch
+            {
+                "id" => "Booking ID",
+                "reference" => "Reference",
+                "event" => "Event Name",
+                "venue" => "Venue Name",
+                _ => "All Fields"
+            };
+            <span class="badge bg-primary me-1">@fieldLabel: "@Model.SearchTerm"</span>
+        }
+        @if (Model.EventTypeId.HasValue)
+        {
+            var name = Model.EventTypeOptions.FirstOrDefault(o => o.Value == Model.EventTypeId.Value.ToString())?.Text ?? "?";
+            <span class="badge bg-info me-1">Type: @name</span>
+        }
+        @if (Model.VenueId.HasValue)
+        {
+            var name = Model.VenueOptions.FirstOrDefault(o => o.Value == Model.VenueId.Value.ToString())?.Text ?? "?";
+            <span class="badge bg-secondary me-1">Venue: @name</span>
+        }
+        @if (Model.DateFrom.HasValue)
+        {
+            <span class="badge bg-success me-1">From: @Model.DateFrom.Value.ToString("dd MMM yyyy")</span>
+        }
+        @if (Model.DateTo.HasValue)
+        {
+            <span class="badge bg-success me-1">To: @Model.DateTo.Value.ToString("dd MMM yyyy")</span>
+        }
+        @if (Model.ShowAvailableOnly)
+        {
+            <span class="badge bg-warning text-dark me-1">Availability mode</span>
+        }
+    </div>
 }
+
+@if (availableVenues != null)
+{
+    <div class="card mb-3 border-success">
+        <div class="card-header bg-success text-white">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong>Available Venues</strong>
+            (between @availDateFrom!.Value.ToString("dd MMM yyyy") and @availDateTo!.Value.ToString("dd MMM yyyy"))
+        </div>
+        <div class="card-body">
+            @if (!availableVenues.Any())
+            {
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    No venues are available in that date range — all venues have overlapping bookings.
+                </div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var v in availableVenues)
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-success">
+                                <div class="card-body">
+                                    <h6 class="fw-bold">@v.Name</h6>
+                                    <p class="small mb-1"><i class="bi bi-geo-alt me-1"></i>@v.Location</p>
+                                    <p class="small mb-0"><i class="bi bi-people me-1"></i>Capacity: @v.Capacity.ToString("N0")</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<p class="text-muted">
+    <i class="bi bi-list-ol me-1"></i>
+    Showing <strong>@Model.Bookings.Count()</strong> booking result(s)
+</p>
 
 @if (!Model.Bookings.Any())
 {
     <div class="alert alert-info">
         <i class="bi bi-info-circle me-2"></i>
-        @if (string.IsNullOrEmpty(Model.SearchTerm))
+        @if (Model.HasActiveFilters)
         {
-            <span>Enter a search term above to find bookings, or <a asp-action="Index">view all bookings</a>.</span>
+            <span>No bookings match the current filters. Try widening or clearing them.</span>
         }
         else
         {
-            <span>No bookings found for "<strong>@Model.SearchTerm</strong>". Try a different term or search field.</span>
+            <span>Use the filters above to search bookings, or <a asp-action="Index">view all bookings</a>.</span>
         }
     </div>
 }
@@ -114,7 +220,15 @@ else
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <span class="badge bg-primary fs-6">@booking.BookingReference</span>
-                            <span class="badge bg-secondary">ID: @booking.BookingId</span>
+                            <div>
+                                @if (!string.IsNullOrEmpty(booking.EventTypeName))
+                                {
+                                    <span class="badge bg-info text-white me-1">
+                                        <i class="bi bi-tag-fill me-1"></i>@booking.EventTypeName
+                                    </span>
+                                }
+                                <span class="badge bg-secondary">ID: @booking.BookingId</span>
+                            </div>
                         </div>
                         <hr />
                         <div class="row">
@@ -159,4 +273,20 @@ else
             </div>
         }
     </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.js-field-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.js-field-btn').forEach(b => {
+                    b.classList.remove('btn-primary');
+                    b.classList.add('btn-outline-secondary');
+                });
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-primary');
+                document.getElementById('searchField').value = this.dataset.val;
+            });
+        });
+    </script>
 }

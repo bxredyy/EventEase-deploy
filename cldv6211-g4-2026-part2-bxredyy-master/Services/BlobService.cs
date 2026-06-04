@@ -3,40 +3,25 @@ using Azure.Storage.Blobs.Models;
 
 namespace EventEase.Services
 {
-    // POE Part 2A: Concrete blob storage implementation that talks to the
-    //              Azurite Emulator (NOT live Azure — that's Part 3).
-    //              Reads "UseDevelopmentStorage=true" from appsettings.json
-    //              and uploads images to the "venue-images" container.
+    // POE Part 2A: blob storage service that uploads images to Azurite (venue-images container).
     public class BlobService : IBlobService
     {
         private readonly string _connectionString;
         private readonly string _containerName;
-
-        // We cache the container client after the first call so we don't
-        // re-create it on every upload (small performance win).
         private BlobContainerClient? _containerClient;
 
         public BlobService(IConfiguration configuration)
         {
-            // The "??" operator picks the right side if the left is null.
-            // So if appsettings.json is missing the key, we still default
-            // to the local Azurite emulator
             _connectionString = configuration.GetConnectionString("AzureBlobStorage")
                 ?? "UseDevelopmentStorage=true";
             _containerName = configuration["AzureBlob:ContainerName"] ?? "venue-images";
         }
 
-        // Lazy initialisation: we only connect to Azurite the FIRST time
-        // someone uploads or deletes. Reason — when Azurite isn't running,
-        // the rest of the app (Venues list, Events list, etc.) still loads
-        // CreateIfNotExistsAsync makes the "venue-images" container if it
-        // doesn't exist, so the marker doesn't have to create it manually
         private async Task<BlobContainerClient> GetContainerAsync()
         {
             if (_containerClient != null) return _containerClient;
 
-            // Short timeout so a missing Azurite emulator fails in seconds, not minutes.
-            // The Azure SDK default is 100 s × 3 retries = ~5 minutes of hanging.
+            // Fail fast when Azurite is offline instead of hanging.
             var options = new BlobClientOptions();
             options.Retry.MaxRetries = 1;
             options.Retry.NetworkTimeout = TimeSpan.FromSeconds(8);
@@ -48,51 +33,29 @@ namespace EventEase.Services
             return _containerClient;
         }
 
-        // POE Part 2A: Uploads the file to Azurite and returns its URL
-        //              Wrapped in a try/catch at the SERVICE level so that
-        //              even if Azurite is down or unreachable, we throw a
-        //              clean managed Exception that the controller can
-        //              catch
+        // POE Part 2A: upload image to Azurite and return its URL.
         public async Task<string> UploadImageAsync(IFormFile file)
         {
-            Console.WriteLine($"[BlobService] >>> UploadImageAsync START: {file?.FileName} ({file?.Length} bytes)");
             try
             {
-                Console.WriteLine("[BlobService] Step 1: GetContainerAsync");
                 var container = await GetContainerAsync();
-                Console.WriteLine("[BlobService] Step 2: container ready");
-
                 var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file!.FileName)}";
                 var blobClient = container.GetBlobClient(fileName);
-                Console.WriteLine($"[BlobService] Step 3: blob client created -> {fileName}");
 
-                // Read the IFormFile into a MemoryStream first
                 using var ms = new MemoryStream();
                 await file.CopyToAsync(ms);
                 ms.Position = 0;
-                Console.WriteLine($"[BlobService] Step 4: file copied to MemoryStream ({ms.Length} bytes)");
 
-                await blobClient.UploadAsync(ms, new BlobHttpHeaders
-                {
-                    ContentType = file.ContentType
-                });
-                Console.WriteLine("[BlobService] Step 5: UploadAsync completed");
-
-                var url = blobClient.Uri.ToString();
-                Console.WriteLine($"[BlobService] <<< Returning URL: {url}");
-                return url;
+                await blobClient.UploadAsync(ms, new BlobHttpHeaders { ContentType = file.ContentType });
+                return blobClient.Uri.ToString();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[BlobService] !!! ERROR: {ex.GetType().Name}: {ex.Message}");
-                Console.WriteLine($"[BlobService] !!! INNER: {ex.InnerException?.Message}");
                 throw new Exception($"Azurite upload failed: {ex.Message}", ex);
             }
         }
 
-        // Cleans up an old blob when the venue/event is deleted or its
-        // image is being replaced. The try/catch means a failed delete
-        // never breaks the user's main action
+        // POE Part 2A: delete an image from Azurite.
         public async Task DeleteImageAsync(string blobUrl)
         {
             if (string.IsNullOrWhiteSpace(blobUrl)) return;
@@ -107,7 +70,7 @@ namespace EventEase.Services
             }
             catch
             {
-                // If Azurite is down, skip silently 
+                // ignore if Azurite is offline
             }
         }
     }

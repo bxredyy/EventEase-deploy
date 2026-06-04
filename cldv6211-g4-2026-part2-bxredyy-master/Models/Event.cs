@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EventEase.Models
 {
@@ -24,6 +25,13 @@ namespace EventEase.Models
         [DataType(DataType.Date)]
         [Display(Name = "End Date")]
         public DateTime EndDate { get; set; }
+
+        // POE Part 3A: link to the EventType lookup table.
+        [Display(Name = "Event Type")]
+        public int? EventTypeId { get; set; }
+
+        [ForeignKey("EventTypeId")]
+        public EventType? EventType { get; set; }
 
         [Display(Name = "Event Image")]
         public string? ImageUrl { get; set; }

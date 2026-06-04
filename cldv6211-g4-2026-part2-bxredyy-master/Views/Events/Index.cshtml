@@ -35,6 +35,12 @@ else
                     }
                     <div class="card-body">
                         <h5 class="card-title fw-bold">@ev.Name</h5>
+                        @if (ev.EventType != null)
+                        {
+                            <span class="badge bg-info text-white mb-2">
+                                <i class="bi bi-tag-fill me-1"></i>@ev.EventType.Name
+                            </span>
+                        }
                         <p class="card-text text-muted small">
                             @(ev.Description?.Length > 100 ? ev.Description[..100] + "..." : ev.Description)
                         </p>

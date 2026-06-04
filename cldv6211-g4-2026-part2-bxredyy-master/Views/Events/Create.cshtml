@@ -25,6 +25,14 @@
                         <span asp-validation-for="Description" class="text-danger small"></span>
                     </div>
 
+                    <div class="mb-3">
+                        <label asp-for="EventTypeId" class="form-label fw-semibold"></label>
+                        <select asp-for="EventTypeId" asp-items="ViewBag.EventTypes" class="form-select">
+                            <option value="">-- Select Event Type (optional) --</option>
+                        </select>
+                        <span asp-validation-for="EventTypeId" class="text-danger small"></span>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label asp-for="StartDate" class="form-label fw-semibold"></label>
